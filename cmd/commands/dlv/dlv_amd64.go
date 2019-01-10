@@ -17,7 +17,6 @@ package dlv
 
 import (
 	"flag"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -37,7 +36,7 @@ import (
 
 var cmdDlv = &commands.Command{
 	CustomFlags: true,
-	UsageLine:   "dlv [-package=\"\"] [-port=8181] [-verbose=false]",
+	UsageLine:   "dlv [-package=\"\"] [-listen=127.0.0.1:8181] [-verbose=false]",
 	Short:       "Start a debugging session using Delve",
 	Long: `dlv command start a debugging session using debugging tool Delve.
 
@@ -52,14 +51,14 @@ var cmdDlv = &commands.Command{
 var (
 	packageName string
 	verbose     bool
-	port        int
+	addr        string
 )
 
 func init() {
 	fs := flag.NewFlagSet("dlv", flag.ContinueOnError)
 	fs.StringVar(&packageName, "package", "", "The package to debug (Must have a main package)")
 	fs.BoolVar(&verbose, "verbose", false, "Enable verbose mode")
-	fs.IntVar(&port, "port", 8181, "Port to listen to for clients")
+	fs.StringVar(&addr, "listen", "127.0.0.1:8181", "Address to listen to for clients")
 	cmdDlv.Flag = *fs
 	commands.AvailableCommands = append(commands.AvailableCommands, cmdDlv)
 }
@@ -70,7 +69,6 @@ func runDlv(cmd *commands.Command, args []string) int {
 	}
 
 	var (
-		addr       = fmt.Sprintf("127.0.0.1:%d", port)
 		paths      = make([]string, 0)
 		notifyChan = make(chan int)
 	)
@@ -152,7 +150,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 		APIVersion:  2,
 		WorkingDir:  ".",
 		ProcessArgs: []string{abs},
-	}, false)
+	}, verbose)
 	if err := server.Run(); err != nil {
 		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
 	}
